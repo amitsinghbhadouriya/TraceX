@@ -8,139 +8,153 @@ import {
   ShieldExclamationIcon
 } from '@heroicons/react/24/outline';
 
-const NodeWrapper = ({ type, label, riskLevel, riskScore, icon: Icon, color, selected }) => {
-  const isCritical = riskLevel === 'CRITICAL';
-  const isHigh = riskLevel === 'HIGH';
-
-  const borderStyles = selected
-    ? 'border-cyan shadow-[0_0_25px_rgba(0,212,255,0.4)] scale-105'
-    : isCritical
-    ? 'border-rose/70 shadow-[0_0_20px_rgba(244,63,94,0.3)]'
-    : isHigh
-    ? 'border-amber/60 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-    : 'border-white/10 hover:border-white/25 hover:shadow-[0_0_15px_rgba(255,255,255,0.05)]';
-
-  const badgeStyles = isCritical
-    ? 'bg-rose/20 text-rose border-rose/40 font-bold animate-pulse'
-    : isHigh
-    ? 'bg-amber/20 text-amber border-amber/40 font-bold'
-    : 'bg-emerald/20 text-emerald border-emerald/40';
-
-  return (
-    <div
-      style={{
-        transformStyle: 'preserve-3d',
-        perspective: '600px',
-      }}
-      className="relative group cursor-pointer"
-    >
-      {/* 3D Glowing Aura Halo for Critical/High Nodes */}
-      {(isCritical || isHigh) && (
-        <div
-          className={`absolute -inset-1 rounded-2xl blur-sm opacity-60 transition-opacity duration-300 ${
-            isCritical ? 'bg-rose/40 animate-pulse' : 'bg-amber/30'
-          }`}
-        />
-      )}
-
-      {/* Main 3D Glass Node Body */}
-      <div
-        className={`relative px-4 py-3 rounded-xl bg-navy-800/90 border backdrop-blur-md flex items-center gap-3 w-56 transition-all duration-200 ${borderStyles}`}
-      >
-        <div
-          className="h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0 shadow-inner"
-          style={{ backgroundColor: `${color}25`, color }}
-        >
-          <Icon className="h-5 w-5" />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-1 mb-0.5">
-            <span className="text-[9px] uppercase tracking-wider text-slate-400 font-extrabold font-mono">{type}</span>
-            <span className={`text-[8px] font-mono border rounded px-1.5 py-0.2 ${badgeStyles}`}>
-              {Math.round(riskScore)}
-            </span>
-          </div>
-
-          <div className="text-xs font-semibold text-slate-200 truncate font-mono" title={label}>
-            {label}
-          </div>
-        </div>
-
-        {isCritical && <ShieldExclamationIcon className="h-4 w-4 text-rose flex-shrink-0 animate-bounce" />}
-      </div>
-    </div>
-  );
+const getRiskColors = (riskLevel, riskScore) => {
+  const score = Math.round(riskScore || 0);
+  if (riskLevel === 'CRITICAL' || score >= 75) {
+    return {
+      border: 'border-rose/80 shadow-[0_0_15px_rgba(244,63,94,0.4)]',
+      bg: 'bg-rose/15',
+      badge: 'bg-rose text-white font-bold',
+      glow: 'shadow-glow-rose',
+      textColor: 'text-rose',
+    };
+  }
+  if (riskLevel === 'HIGH' || score >= 50) {
+    return {
+      border: 'border-amber/80 shadow-[0_0_12px_rgba(245,158,11,0.3)]',
+      bg: 'bg-amber/15',
+      badge: 'bg-amber text-navy font-bold',
+      glow: '',
+      textColor: 'text-amber',
+    };
+  }
+  return {
+    border: 'border-cyan/40 hover:border-cyan',
+    bg: 'bg-navy-800/90',
+    badge: 'bg-cyan/20 text-cyan font-bold',
+    glow: '',
+    textColor: 'text-cyan',
+  };
 };
 
 export const AccountNode = memo(({ data, selected }) => {
+  const style = getRiskColors(data.risk_level, data.risk_score);
+  const score = Math.round(data.risk_score || 0);
+  const isHighRisk = score >= 50;
+
   return (
-    <div className="relative">
-      <Handle type="target" position={Position.Top} className="opacity-0" />
-      <NodeWrapper
-        type="Account"
-        label={data.label}
-        riskLevel={data.risk_level}
-        riskScore={data.risk_score || 0}
-        icon={CreditCardIcon}
-        color="#00D4FF"
-        selected={selected}
-      />
-      <Handle type="source" position={Position.Bottom} className="opacity-0" />
+    <div className="relative group">
+      <Handle type="target" position={Position.Top} className="!w-2 !h-2 !bg-cyan !border-none opacity-0" />
+      
+      <div
+        className={`px-3 py-1.5 rounded-xl border backdrop-blur-md flex items-center gap-2 cursor-pointer transition-all duration-200 select-none ${
+          selected ? 'border-cyan ring-2 ring-cyan/50 scale-110 shadow-glow-cyan bg-navy-800' : `${style.border} ${style.bg}`
+        }`}
+        style={{ minWidth: '110px', maxWidth: '160px' }}
+      >
+        <div className={`h-6 w-6 rounded-lg bg-cyan/15 text-cyan flex items-center justify-center flex-shrink-0 ${isHighRisk ? 'text-rose bg-rose/20' : ''}`}>
+          <CreditCardIcon className="h-3.5 w-3.5" />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] font-bold text-slate-100 truncate font-mono" title={data.label || data.id}>
+            {data.label || data.id}
+          </p>
+        </div>
+
+        <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-bold flex-shrink-0 ${style.badge}`}>
+          {score}
+        </span>
+      </div>
+
+      <Handle type="source" position={Position.Bottom} className="!w-2 !h-2 !bg-cyan !border-none opacity-0" />
     </div>
   );
 });
 
 export const DeviceNode = memo(({ data, selected }) => {
+  const isShared = (data.degree || 0) > 1;
+
   return (
-    <div className="relative">
-      <Handle type="target" position={Position.Top} className="opacity-0" />
-      <NodeWrapper
-        type="Device"
-        label={data.label}
-        riskLevel={data.risk_level}
-        riskScore={data.risk_score || 0}
-        icon={DevicePhoneMobileIcon}
-        color="#A78BFA"
-        selected={selected}
-      />
-      <Handle type="source" position={Position.Bottom} className="opacity-0" />
+    <div className="relative group">
+      <Handle type="target" position={Position.Top} className="!w-2 !h-2 !bg-violet-400 !border-none opacity-0" />
+      
+      <div
+        className={`px-3 py-2 rounded-2xl border-2 backdrop-blur-md flex items-center gap-2.5 cursor-pointer transition-all duration-200 select-none ${
+          selected
+            ? 'border-violet-400 ring-2 ring-violet-400/50 scale-110 shadow-[0_0_20px_rgba(167,139,250,0.5)] bg-navy-800'
+            : isShared
+            ? 'border-violet-400/80 bg-violet-950/60 shadow-[0_0_15px_rgba(167,139,250,0.3)]'
+            : 'border-white/20 bg-navy-800/90'
+        }`}
+        style={{ minWidth: '130px', maxWidth: '180px' }}
+      >
+        <div className="h-7 w-7 rounded-xl bg-violet-500/20 text-violet-400 flex items-center justify-center flex-shrink-0 shadow-inner">
+          <DevicePhoneMobileIcon className="h-4 w-4" />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <span className="text-[8px] font-mono font-bold uppercase tracking-wider text-violet-400 block">
+            {isShared ? 'Shared Phone/IP' : 'Hardware'}
+          </span>
+          <p className="text-[11px] font-bold text-slate-100 truncate font-mono" title={data.label || data.id}>
+            {data.label || data.id}
+          </p>
+        </div>
+      </div>
+
+      <Handle type="source" position={Position.Bottom} className="!w-2 !h-2 !bg-violet-400 !border-none opacity-0" />
     </div>
   );
 });
 
 export const MerchantNode = memo(({ data, selected }) => {
   return (
-    <div className="relative">
-      <Handle type="target" position={Position.Top} className="opacity-0" />
-      <NodeWrapper
-        type="Merchant"
-        label={data.label}
-        riskLevel={data.risk_level}
-        riskScore={data.risk_score || 0}
-        icon={BuildingStorefrontIcon}
-        color="#F59E0B"
-        selected={selected}
-      />
-      <Handle type="source" position={Position.Bottom} className="opacity-0" />
+    <div className="relative group">
+      <Handle type="target" position={Position.Top} className="!w-2 !h-2 !bg-amber !border-none opacity-0" />
+      
+      <div
+        className={`px-3 py-2 rounded-2xl border-2 backdrop-blur-md flex items-center gap-2.5 cursor-pointer transition-all duration-200 select-none ${
+          selected
+            ? 'border-amber ring-2 ring-amber/50 scale-110 shadow-[0_0_20px_rgba(245,158,11,0.5)] bg-navy-800'
+            : 'border-amber/60 bg-amber-950/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+        }`}
+        style={{ minWidth: '130px', maxWidth: '180px' }}
+      >
+        <div className="h-7 w-7 rounded-xl bg-amber/20 text-amber flex items-center justify-center flex-shrink-0 shadow-inner">
+          <BuildingStorefrontIcon className="h-4 w-4" />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <span className="text-[8px] font-mono font-bold uppercase tracking-wider text-amber block">
+            Merchant / Store
+          </span>
+          <p className="text-[11px] font-bold text-slate-100 truncate font-mono" title={data.label || data.id}>
+            {data.label || data.id}
+          </p>
+        </div>
+      </div>
+
+      <Handle type="source" position={Position.Bottom} className="!w-2 !h-2 !bg-amber !border-none opacity-0" />
     </div>
   );
 });
 
 export const LocationNode = memo(({ data, selected }) => {
   return (
-    <div className="relative">
-      <Handle type="target" position={Position.Top} className="opacity-0" />
-      <NodeWrapper
-        type="Location"
-        label={data.label}
-        riskLevel={data.risk_level}
-        riskScore={data.risk_score || 0}
-        icon={MapPinIcon}
-        color="#34D399"
-        selected={selected}
-      />
-      <Handle type="source" position={Position.Bottom} className="opacity-0" />
+    <div className="relative group">
+      <Handle type="target" position={Position.Top} className="!w-2 !h-2 !bg-emerald !border-none opacity-0" />
+      
+      <div
+        className={`px-2.5 py-1.5 rounded-xl border backdrop-blur-md flex items-center gap-2 cursor-pointer transition-all select-none ${
+          selected ? 'border-emerald ring-2 ring-emerald/50 bg-navy-800' : 'border-emerald/40 bg-emerald-950/30'
+        }`}
+      >
+        <MapPinIcon className="h-3.5 w-3.5 text-emerald flex-shrink-0" />
+        <span className="text-[10px] font-mono font-bold text-slate-200">{data.label || data.id}</span>
+      </div>
+
+      <Handle type="source" position={Position.Bottom} className="!w-2 !h-2 !bg-emerald !border-none opacity-0" />
     </div>
   );
 });
