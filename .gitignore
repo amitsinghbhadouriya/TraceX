@@ -1,0 +1,42 @@
+# TraceX monorepo — root .gitignore
+# Each sub-project also has its own .gitignore; this catches anything that
+# slips through at the root level.
+
+# ── Environment files — catch-all for any sub-directory ──────────────────────
+**/.env
+**/.env.local
+**/.env.*.local
+# Allow templates in any sub-directory
+!**/.env.example
+
+# ── Node ──────────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ── Data files ────────────────────────────────────────────────────────────────
+*.csv
+*.parquet
+*.pkl
+*.pickle
+*.h5
+
+# ── Build output ──────────────────────────────────────────────────────────────
+dist/
+build/
+
+# ── OS / Editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.sw?

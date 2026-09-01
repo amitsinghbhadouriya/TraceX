@@ -1,0 +1,57 @@
+# ── Environment files — NEVER commit these ────────────────────────────────────
+.env
+.env.local
+.env.*.local
+# Allow the template (no real values)
+!.env.example
+
+# ── Python runtime ────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+.venv.bak/
+
+# ── Large data files — use a data store or DVC instead ───────────────────────
+*.csv
+*.parquet
+*.feather
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+
+# ── ML / model artefacts ──────────────────────────────────────────────────────
+*.joblib
+*.onnx
+models/
+checkpoints/
+
+# ── Build / dist ──────────────────────────────────────────────────────────────
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# ── Testing & coverage ────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# ── OS / Editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.sw?
