@@ -41,7 +41,7 @@ env/
 ENV/
 .venv.bak/
 
-# ── Data files & Datasets ─────────────────────────────────────────────────────
+# ── Data files & Datasets — NEVER commit customer/financial data ───────────
 *.csv
 *.tsv
 *.parquet
@@ -57,12 +57,25 @@ ENV/
 *.sqlite3
 *.db
 dump/
+uploads/
+session_data/
+*.session
 
 # ── ML Models & Artifacts ─────────────────────────────────────────────────────
 *.joblib
 *.onnx
+*.pt
+*.pth
+*.bin
 models/
 checkpoints/
+
+# ── Security, Reports & Audits ─────────────────────────────────────────────────
+audit_*.json
+audit-*.json
+*.audit
+security-report.*
+trivy-*.json
 
 # ── Build output ──────────────────────────────────────────────────────────────
 dist/
@@ -78,7 +91,7 @@ htmlcov/
 .mypy_cache/
 .ruff_cache/
 
-# ── OS / Editor ───────────────────────────────────────────────────────────────
+# ── OS / Editor / IDE ─────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 .vscode/
@@ -88,3 +101,4 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+.antigravity/
