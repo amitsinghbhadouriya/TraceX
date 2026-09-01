@@ -117,6 +117,64 @@ const useAnalysisStore = create((set, get) => ({
     }
   },
 
+  clearActiveCase: () => {
+    set({
+      selectedDataset: null,
+      sessionId: null,
+      summary: null,
+      nodes: [],
+      edges: [],
+      clusters: [],
+      chatMessages: [],
+    });
+  },
+
+  deleteDataset: async (datasetId) => {
+    if (!datasetId) return false;
+    try {
+      await datasetApi.delete(datasetId);
+      const isCurrent = get().selectedDataset?._id === datasetId;
+      const remaining = (get().datasets || []).filter((d) => d._id !== datasetId);
+      
+      if (isCurrent) {
+        if (remaining.length > 0) {
+          const nextDataset = remaining[0];
+          set({
+            datasets: remaining,
+            selectedDataset: nextDataset,
+            sessionId: nextDataset.sessionId,
+            summary: null,
+            nodes: [],
+            edges: [],
+            clusters: [],
+            chatMessages: [],
+          });
+          if (nextDataset.status === 'analysis_complete') {
+            get().fetchSummary();
+            get().fetchGraph();
+          }
+        } else {
+          set({
+            datasets: [],
+            selectedDataset: null,
+            sessionId: null,
+            summary: null,
+            nodes: [],
+            edges: [],
+            clusters: [],
+            chatMessages: [],
+          });
+        }
+      } else {
+        set({ datasets: remaining });
+      }
+      return true;
+    } catch (err) {
+      console.error('Failed to delete dataset:', err);
+      return false;
+    }
+  },
+
   uploadDataset: async (file) => {
     try {
       const res = await datasetApi.upload(file);

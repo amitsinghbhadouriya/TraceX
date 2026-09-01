@@ -43,6 +43,7 @@ export const datasetApi = {
   },
   list: () => api.get('/datasets'),
   getById: (id) => api.get(`/datasets/${id}`),
+  delete: (id) => api.delete(`/datasets/${id}`),
 };
 
 export const analysisApi = {

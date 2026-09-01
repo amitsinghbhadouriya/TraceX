@@ -31,20 +31,20 @@ const NetworksPage = () => {
     <div className="flex flex-col gap-8 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col gap-1 border-b border-white/10 pb-4">
-        <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+        <h2 className="text-xl font-extrabold text-slate-100 flex items-center gap-2">
           <CpuChipIcon className="h-6 w-6 text-cyan" />
-          <span>Suspicious Coordinated Networks</span>
+          <span>Connected Fraud Rings</span>
         </h2>
         <p className="text-xs text-slate-400">
-          Clustered groups of accounts resolved via shared device signatures, location footprints, and merchant connections.
+          Groups of accounts that share the same phones, addresses, cards, or stores to move suspicious money.
         </p>
       </div>
 
       {suspiciousClusters.length === 0 ? (
         <div className="card p-12 text-center max-w-md mx-auto flex flex-col items-center gap-3">
           <ShieldExclamationIcon className="h-10 w-10 text-emerald animate-pulse" />
-          <h3 className="text-md font-bold text-slate-200">No Suspicious Clusters Resolved</h3>
-          <p className="text-xs text-slate-400">All entity subgraphs resolved below risk threshold limits.</p>
+          <h3 className="text-md font-bold text-slate-200">No Suspicious Groups Found</h3>
+          <p className="text-xs text-slate-400">All accounts in this file look normal and safe.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

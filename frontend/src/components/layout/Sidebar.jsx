@@ -9,11 +9,22 @@ import {
   ChatBubbleLeftRightIcon,
   IdentificationIcon,
   SignalIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  TrashIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 const Sidebar = () => {
-  const { logout, user, selectedDataset, datasets, fetchDatasets, selectDataset } = useAnalysisStore();
+  const {
+    logout,
+    user,
+    selectedDataset,
+    datasets,
+    fetchDatasets,
+    selectDataset,
+    deleteDataset,
+    clearActiveCase
+  } = useAnalysisStore();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -23,17 +34,35 @@ const Sidebar = () => {
 
   const handleDatasetChange = (e) => {
     const datasetId = e.target.value;
+    if (!datasetId) {
+      clearActiveCase();
+      navigate('/upload');
+      return;
+    }
     const dataset = datasets.find(d => d._id === datasetId);
     selectDataset(dataset || null);
     navigate('/dashboard');
   };
 
+  const handleDeleteCurrent = async () => {
+    if (!selectedDataset) return;
+    const confirmDelete = window.confirm(
+      `Are you sure you want to permanently delete "${selectedDataset.filename}" and all its analysis results?`
+    );
+    if (confirmDelete) {
+      const success = await deleteDataset(selectedDataset._id);
+      if (success) {
+        navigate('/upload');
+      }
+    }
+  };
+
   const navItems = [
-    { name: 'Upload Dataset', path: '/upload', icon: ArrowUpTrayIcon },
-    { name: 'Dashboard Stats', path: '/dashboard', icon: CircleStackIcon, disabled: !selectedDataset },
-    { name: 'Investigation Graph', path: '/graph', icon: GlobeAltIcon, disabled: !selectedDataset || selectedDataset.status !== 'analysis_complete' },
-    { name: 'Suspicious Networks', path: '/networks', icon: SignalIcon, disabled: !selectedDataset || selectedDataset.status !== 'analysis_complete' },
-    { name: 'Entity Search', path: '/entities', icon: IdentificationIcon, disabled: !selectedDataset || selectedDataset.status !== 'analysis_complete' },
+    { name: 'Upload Transactions', path: '/upload', icon: ArrowUpTrayIcon },
+    { name: 'Overview Dashboard', path: '/dashboard', icon: CircleStackIcon, disabled: !selectedDataset },
+    { name: '3D Network Map', path: '/graph', icon: GlobeAltIcon, disabled: !selectedDataset || selectedDataset.status !== 'analysis_complete' },
+    { name: 'Connected Fraud Rings', path: '/networks', icon: SignalIcon, disabled: !selectedDataset || selectedDataset.status !== 'analysis_complete' },
+    { name: 'Search Accounts & Cards', path: '/entities', icon: IdentificationIcon, disabled: !selectedDataset || selectedDataset.status !== 'analysis_complete' },
     { name: 'AI Investigation Assistant', path: '/assistant', icon: ChatBubbleLeftRightIcon, disabled: !selectedDataset || selectedDataset.status !== 'analysis_complete' },
   ];
 
@@ -58,12 +87,28 @@ const Sidebar = () => {
       </div>
 
       {/* Dataset Selection Bar */}
-      <div className="p-4 border-b border-white/5 bg-navy-700/50">
-        <label className="section-label mb-2 block">Active Dataset Case</label>
+      <div className="p-4 border-b border-white/5 bg-navy-700/50 flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <label className="section-label">Active Dataset Case</label>
+          {selectedDataset && (
+            <button
+              onClick={() => {
+                clearActiveCase();
+                navigate('/upload');
+              }}
+              className="text-[10px] text-slate-400 hover:text-slate-200 flex items-center gap-1 hover:underline"
+              title="Deselect active case"
+            >
+              <XMarkIcon className="h-3 w-3" />
+              <span>Deselect</span>
+            </button>
+          )}
+        </div>
+
         <select
           value={selectedDataset?._id || ''}
           onChange={handleDatasetChange}
-          className="w-full rounded-lg border border-white/10 bg-navy-800 text-slate-200 text-sm px-3 py-2 focus:outline-none focus:border-cyan/50"
+          className="w-full rounded-lg border border-white/10 bg-navy-800 text-slate-200 text-xs px-2.5 py-2 focus:outline-none focus:border-cyan/50"
         >
           <option value="">-- Select a Dataset --</option>
           {datasets.map((d) => (
@@ -72,6 +117,22 @@ const Sidebar = () => {
             </option>
           ))}
         </select>
+
+        {selectedDataset && (
+          <div className="flex items-center justify-between pt-1 border-t border-white/5">
+            <span className="text-[10px] text-slate-500 font-mono truncate max-w-[170px]">
+              {selectedDataset.filename}
+            </span>
+            <button
+              onClick={handleDeleteCurrent}
+              className="text-[10px] text-rose/70 hover:text-rose hover:bg-rose/10 px-2 py-1 rounded transition-colors flex items-center gap-1"
+              title="Permanently delete this dataset"
+            >
+              <TrashIcon className="h-3 w-3" />
+              <span>Delete Case</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Navigation Options */}

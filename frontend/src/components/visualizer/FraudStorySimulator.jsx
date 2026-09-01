@@ -9,7 +9,6 @@ import {
   SparklesIcon,
   CheckBadgeIcon
 } from '@heroicons/react/24/outline';
-import TiltCard3D from '../3d/TiltCard3D';
 
 const STORY_STAGES = [
   {
@@ -113,7 +112,7 @@ const FraudStorySimulator = ({ onLaunchLiveCase }) => {
       </div>
 
       {/* Main Interactive Stage Display */}
-      <TiltCard3D glowColor={activeStep === 3 ? '#F43F5E' : '#00D4FF'} className="card p-8 bg-navy-800/90 border-white/15">
+      <div className={`card p-8 bg-navy-800/90 border transition-all duration-300 rounded-2xl ${activeStep === 3 ? 'border-rose/40 hover:border-rose shadow-glow-rose' : 'border-white/15 hover:border-cyan/40 shadow-xl'}`}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           {/* Text & Context */}
           <div className="lg:col-span-6 flex flex-col gap-4">
@@ -251,7 +250,7 @@ const FraudStorySimulator = ({ onLaunchLiveCase }) => {
             )}
           </div>
         </div>
-      </TiltCard3D>
+      </div>
     </div>
   );
 };
