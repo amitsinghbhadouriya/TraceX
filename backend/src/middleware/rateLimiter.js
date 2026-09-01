@@ -69,7 +69,7 @@ const cfg = {
   },
   public: {
     windowMin: envInt('RL_PUBLIC_WINDOW_MIN', 15),
-    max:       envInt('RL_PUBLIC_MAX',        60),
+    max:       envInt('RL_PUBLIC_MAX',        5000),
   },
   authed: {
     windowMin: envInt('RL_AUTHED_WINDOW_MIN', 15),

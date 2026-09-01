@@ -44,15 +44,10 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('combined'));
 }
 
-// ── Rate Limiting (global fallback — public tier) ─────────────────────────────
-// Covers /health and any unmatched routes.  All API routes apply their own
-// per-tier limiters (authedLimiter, analysisLimiter, uploadLimiter, etc.).
-app.use(publicLimiter);
-
 // ── Health ────────────────────────────────────────────────────────────────────
-app.get('/health', (req, res) => res.json({ status: 'ok', service: 'tracex-backend' }));
+app.get('/health', publicLimiter, (req, res) => res.json({ status: 'ok', service: 'tracex-backend' }));
 
-// ── Routes ────────────────────────────────────────────────────────────────────
+// ── Routes (each applies its own tiered rate limiter: authed, upload, chat, analysis) ──
 app.use('/api/auth',     authRoutes);
 app.use('/api/datasets', datasetRoutes);
 app.use('/api/analysis', analysisRoutes);

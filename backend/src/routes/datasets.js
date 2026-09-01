@@ -132,4 +132,34 @@ router.get('/:id',
   }
 );
 
+// ── DELETE /api/datasets/:id ──────────────────────────────────────────────────
+router.delete('/:id',
+  authenticate,
+  authedLimiter,
+  ...datasetSchemas.getById,
+  validate,
+  async (req, res, next) => {
+    try {
+      const AnalysisResult = require('../models/AnalysisResult');
+      const dataset = await Dataset.findOneAndDelete({
+        _id: req.params.id,
+        uploadedBy: req.user._id,
+      });
+
+      if (!dataset) return res.status(404).json({ error: 'Dataset not found.' });
+
+      // Clean up any associated analysis results
+      await AnalysisResult.deleteMany({ datasetId: dataset._id });
+
+      await audit(req, 'DELETE_DATASET', {
+        datasetId: dataset._id,
+        filename: dataset.filename,
+        sessionId: dataset.sessionId,
+      });
+
+      res.json({ success: true, message: 'Dataset removed successfully.', deletedId: dataset._id });
+    } catch (err) { next(err); }
+  }
+);
+
 module.exports = router;
