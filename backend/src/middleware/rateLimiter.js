@@ -73,19 +73,19 @@ const cfg = {
   },
   authed: {
     windowMin: envInt('RL_AUTHED_WINDOW_MIN', 15),
-    max:       envInt('RL_AUTHED_MAX',        300),
+    max:       envInt('RL_AUTHED_MAX',        1000),
   },
   upload: {
     windowMin: envInt('RL_UPLOAD_WINDOW_MIN', 1),
-    max:       envInt('RL_UPLOAD_MAX',        5),
+    max:       envInt('RL_UPLOAD_MAX',        60),
   },
   chat: {
     windowMin: envInt('RL_CHAT_WINDOW_MIN', 1),
-    max:       envInt('RL_CHAT_MAX',        20),
+    max:       envInt('RL_CHAT_MAX',        300),
   },
   analysis: {
     windowMin: envInt('RL_ANALYSIS_WINDOW_MIN', 60),
-    max:       envInt('RL_ANALYSIS_MAX',        10),
+    max:       envInt('RL_ANALYSIS_MAX',        120),
   },
 };
 

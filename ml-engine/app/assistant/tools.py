@@ -41,17 +41,36 @@ TOOL_DECLARATIONS = [
         },
     },
     {
+        "name": "get_all_clusters",
+        "description": (
+            "Returns a list of all detected suspicious network clusters in the dataset, "
+            "sorted by risk score descending, with entity counts, risk level, and primary factors. "
+            "Use this when the user asks about multiple clusters, which cluster to investigate first, "
+            "or what suspicious networks exist."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "min_risk_score": {
+                    "type": "number",
+                    "description": "Minimum risk score filter (0-100)",
+                },
+            },
+            "required": [],
+        },
+    },
+    {
         "name": "get_cluster_summary",
         "description": (
-            "Returns risk score, entity breakdown, and primary risk factors "
-            "for a specific suspicious network/cluster."
+            "Returns risk score, entity breakdown, member entities, hub nodes, and primary risk factors "
+            "for a specific suspicious network/cluster by ID."
         ),
         "parameters": {
             "type": "object",
             "properties": {
                 "cluster_id": {
                     "type": "integer",
-                    "description": "Numeric cluster/community ID",
+                    "description": "Numeric cluster/community ID (e.g. 0, 1, 2)",
                 },
             },
             "required": ["cluster_id"],
@@ -137,6 +156,7 @@ class ToolExecutor:
         dispatch = {
             "get_dataset_summary":          self._dataset_summary,
             "get_entity_risk":              self._entity_risk,
+            "get_all_clusters":             self._all_clusters,
             "get_cluster_summary":          self._cluster_summary,
             "get_top_anomalous_transactions": self._top_anomalous,
             "get_entity_connections":       self._entity_connections,
@@ -173,12 +193,23 @@ class ToolExecutor:
         # Try direct match first
         entity = entity_scores.get(entity_id)
 
-        # Try fuzzy match by token in label
+        # Try case-insensitive and fuzzy token/label match
         if not entity:
             token = entity_id.split("::")[-1] if "::" in entity_id else entity_id
+            token_clean = token.lower().strip()
             for nid, ent in entity_scores.items():
-                tok_label = self.redactor.tokenize(ent["label"], ent["entity_type"])
-                if tok_label == token or self.redactor.tokenize(nid, ent["entity_type"]) == token:
+                label_clean = str(ent.get("label", "")).lower().strip()
+                nid_clean = str(nid).lower().strip()
+                tok_label = str(self.redactor.tokenize(ent.get("label", ""), ent.get("entity_type", ""))).lower().strip()
+                tok_nid = str(self.redactor.tokenize(nid, ent.get("entity_type", ""))).lower().strip()
+
+                if (
+                    token_clean == label_clean or
+                    token_clean == nid_clean or
+                    token_clean == tok_label or
+                    token_clean == tok_nid or
+                    (len(token_clean) > 3 and token_clean in label_clean)
+                ):
                     entity = ent
                     break
 
@@ -196,20 +227,77 @@ class ToolExecutor:
             "connection_count":     entity.get("connection_count", 0),
         }
 
-    def _cluster_summary(self, session, cluster_id: int) -> dict:
+    def _all_clusters(self, session, min_risk_score: float = 0.0) -> dict:
         cluster_scores: dict = session.get("cluster_scores", {})
-        cluster = cluster_scores.get(cluster_id) or cluster_scores.get(str(cluster_id))
-        if not cluster:
-            return {"error": f"Cluster {cluster_id} not found."}
+        if not cluster_scores:
+            return {"clusters": [], "total": 0, "message": "No clusters computed yet."}
+
+        clusters_list = []
+        for cid, c in cluster_scores.items():
+            if c.get("risk_score", 0) >= min_risk_score:
+                clusters_list.append({
+                    "community_id":        c["community_id"],
+                    "risk_score":          c["risk_score"],
+                    "risk_level":          c["risk_level"],
+                    "member_count":        c["member_count"],
+                    "entity_type_counts":  c.get("entity_type_counts", {}),
+                    "shared_entity_edges": c.get("shared_entity_edges", 0),
+                    "primary_factors":     c.get("primary_factors", []),
+                })
+
+        clusters_list.sort(key=lambda x: x["risk_score"], reverse=True)
         return {
-            "community_id":       cluster["community_id"],
-            "risk_score":         cluster["risk_score"],
-            "risk_level":         cluster["risk_level"],
-            "member_count":       cluster["member_count"],
-            "entity_type_counts": cluster["entity_type_counts"],
-            "avg_member_score":   cluster["avg_member_score"],
-            "primary_factors":    cluster["primary_factors"],
+            "clusters": clusters_list,
+            "total_clusters": len(clusters_list),
+            "highest_risk_cluster": clusters_list[0]["community_id"] if clusters_list else None,
+        }
+
+    def _cluster_summary(self, session, cluster_id: Any) -> dict:
+        cluster_scores: dict = session.get("cluster_scores", {})
+        entity_scores: dict = session.get("entity_scores", {})
+
+        # Flexible cluster_id lookup (handle int, str, 'cluster 0', etc.)
+        parsed_id = cluster_id
+        if isinstance(cluster_id, str):
+            digits = "".join(filter(str.isdigit, cluster_id))
+            parsed_id = int(digits) if digits else cluster_id
+
+        cluster = (
+            cluster_scores.get(parsed_id) or
+            cluster_scores.get(str(parsed_id)) or
+            (cluster_scores.get(int(parsed_id)) if str(parsed_id).isdigit() else None)
+        )
+
+        if not cluster:
+            available_ids = list(cluster_scores.keys())
+            return {
+                "error": f"Cluster '{cluster_id}' not found in analysis results.",
+                "available_cluster_ids": available_ids,
+            }
+
+        member_ids = cluster.get("node_ids", [])
+        member_details = []
+        for mid in member_ids[:15]:
+            ent = entity_scores.get(mid, {})
+            member_details.append({
+                "id": mid,
+                "type": ent.get("entity_type", "unknown"),
+                "label": ent.get("label", mid),
+                "risk_score": ent.get("risk_score", 0),
+                "risk_level": ent.get("risk_level", "LOW"),
+                "is_hub": ent.get("is_hub", False),
+            })
+
+        return {
+            "community_id":        cluster["community_id"],
+            "risk_score":          cluster["risk_score"],
+            "risk_level":          cluster["risk_level"],
+            "member_count":        cluster["member_count"],
+            "entity_type_counts":  cluster["entity_type_counts"],
+            "avg_member_score":    cluster["avg_member_score"],
+            "primary_factors":     cluster["primary_factors"],
             "shared_entity_edges": cluster["shared_entity_edges"],
+            "sample_members":      member_details,
         }
 
     def _top_anomalous(self, session, n: int = 10, min_score: float = 0.0) -> dict:

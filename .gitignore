@@ -2,41 +2,89 @@
 # Each sub-project also has its own .gitignore; this catches anything that
 # slips through at the root level.
 
-# ── Environment files — catch-all for any sub-directory ──────────────────────
+# ── Environment & Secrets — NEVER commit these ──────────────────────────────
 **/.env
 **/.env.local
 **/.env.*.local
-# Allow templates in any sub-directory
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
+*.pem
+*.key
+*.cert
+*.pfx
+*.p12
+credentials.json
+service-account*.json
+google-services.json
+client_secret*.json
+
+# Allow templates in any sub-directory (without real secrets)
 !**/.env.example
 
 # ── Node ──────────────────────────────────────────────────────────────────────
 node_modules/
 npm-debug.log*
+yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+*.log
 
 # ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
+*$py.class
+.Python
 .venv/
 venv/
+env/
+ENV/
+.venv.bak/
 
-# ── Data files ────────────────────────────────────────────────────────────────
+# ── Data files & Datasets ─────────────────────────────────────────────────────
 *.csv
+*.tsv
 *.parquet
+*.feather
 *.pkl
 *.pickle
 *.h5
+*.hdf5
+*.xlsx
+*.xls
+*.xlsm
+*.sqlite
+*.sqlite3
+*.db
+dump/
+
+# ── ML Models & Artifacts ─────────────────────────────────────────────────────
+*.joblib
+*.onnx
+models/
+checkpoints/
 
 # ── Build output ──────────────────────────────────────────────────────────────
 dist/
+dist-ssr/
 build/
+*.egg-info/
+.eggs/
+
+# ── Testing & Coverage ────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
 
 # ── OS / Editor ───────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
-.vscode/*
-!.vscode/extensions.json
+.vscode/
 .idea/
 *.suo
+*.ntvs*
+*.njsproj
+*.sln
 *.sw?

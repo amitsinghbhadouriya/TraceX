@@ -19,20 +19,54 @@ logger = logging.getLogger(__name__)
 
 # Canonical column names → possible source column aliases (lowercase)
 CANONICAL_MAP = {
-    "transaction_id": ["transaction_id", "txn_id", "trans_id", "id", "transaction id", "trans_num", "tx_id"],
-    "timestamp":      ["timestamp", "date", "time", "datetime", "txn_date", "transaction_date",
-                       "created_at", "date_time", "trans_date", "step", "trans_date_trans_time", "epoch"],
-    "amount":         ["amount", "amt", "transaction_amount", "txn_amount", "value", "sum", "price", "total"],
-    "account_id":     ["account_id", "account", "acct_id", "acct", "sender", "source_account",
-                       "from_account", "accountid", "user_id", "customer_id", "customer", "cust_id",
-                       "card_number", "cc_num", "client_id", "src_account", "orig_account"],
-    "merchant_id":    ["merchant_id", "merchant", "merch_id", "store_id", "vendor_id", "payee",
-                       "merchant_name", "dest_account", "recipient", "receiver", "destination"],
-    "device_id":      ["device_id", "device", "dev_id", "deviceid", "ip_address", "ip", "terminal_id", "terminal"],
-    "location":       ["location", "city", "region", "country", "loc", "place", "state", "zip", "lat_long"],
-    "category":       ["category", "cat", "type", "txn_type", "transaction_type", "mcc", "category_desc"],
-    "ip_address":     ["ip_address", "ip", "ipaddress", "ip_addr"],
-    "status":         ["status", "txn_status", "state", "result", "is_fraud", "class", "target"],
+    "transaction_id": [
+        "transaction_id", "txn_id", "trans_id", "id", "transaction id", "trans_num",
+        "tx_id", "transaction_num", "trans_no", "step", "idx", "row_id"
+    ],
+    "timestamp": [
+        "timestamp", "date", "time", "datetime", "txn_date", "transaction_date",
+        "created_at", "date_time", "trans_date", "step", "trans_date_trans_time",
+        "epoch", "trans_time", "unix_time", "purchase_time", "transactiondt",
+        "signup_time", "event_time", "occurred_at"
+    ],
+    "amount": [
+        "amount", "amt", "transaction_amount", "txn_amount", "value", "sum",
+        "price", "total", "trans_amt", "payment", "cost", "purchase_value",
+        "transactionamt", "transamt", "amt_usd", "tx_amount", "payment_amount", "val"
+    ],
+    "account_id": [
+        "account_id", "account", "acct_id", "acct", "sender", "source_account",
+        "from_account", "accountid", "user_id", "customer_id", "customer", "cust_id",
+        "card_number", "cc_num", "client_id", "src_account", "orig_account", "nameorig",
+        "sender_id", "source", "card1", "card2", "card_id", "userid", "account_no", "account_num"
+    ],
+    "merchant_id": [
+        "merchant_id", "merchant", "merch_id", "store_id", "vendor_id", "payee",
+        "merchant_name", "dest_account", "recipient", "receiver", "destination",
+        "namedest", "target", "dest", "target_account", "p_emaildomain", "r_emaildomain",
+        "recipient_id", "vendor", "store"
+    ],
+    "device_id": [
+        "device_id", "device", "dev_id", "deviceid", "ip_address", "ip", "terminal_id",
+        "terminal", "hardware_id", "mac_address", "card3", "card4", "card5", "card6",
+        "device_model", "client_device"
+    ],
+    "location": [
+        "location", "city", "region", "country", "loc", "place", "state", "zip",
+        "lat_long", "lat", "long", "latitude", "longitude", "zip_code", "billing_city",
+        "country_code", "addr1", "addr2", "merchant_city", "merchant_state"
+    ],
+    "category": [
+        "category", "cat", "type", "txn_type", "transaction_type", "mcc", "category_desc",
+        "payment_type", "action", "productcd", "genre"
+    ],
+    "ip_address": [
+        "ip_address", "ip", "ipaddress", "ip_addr", "client_ip", "source_ip", "user_ip"
+    ],
+    "status": [
+        "status", "txn_status", "state", "result", "is_fraud", "class", "target",
+        "isfraud", "fraud_label", "label", "is_flagged_fraud", "is_anomaly", "fraud"
+    ],
 }
 
 REQUIRED_FIELDS = {"amount"}
@@ -159,6 +193,19 @@ def _detect_columns(df: pd.DataFrame) -> tuple[dict, list, list]:
                 field_map[canonical] = original_col
                 matched_originals.add(original_col)
                 break
+
+    # Smart fallback for amount if not explicitly detected by alias
+    if "amount" not in field_map:
+        numeric_candidates = [
+            c for c in df.columns
+            if c not in matched_originals and pd.to_numeric(df[c], errors="coerce").notna().sum() > len(df) * 0.5
+        ]
+        if numeric_candidates:
+            # Pick first available numeric candidate
+            chosen = numeric_candidates[0]
+            field_map["amount"] = chosen
+            matched_originals.add(chosen)
+            logger.info("Auto-detected '%s' as transaction amount column (fallback).", chosen)
 
     missing_fields = [f for f in REQUIRED_FIELDS if f not in field_map]
     extra_columns = [col for col in df.columns if col not in matched_originals]

@@ -77,7 +77,7 @@ def validate_and_normalize(df: pd.DataFrame, field_map: dict, missing_fields: li
         # Check if timestamp is purely numeric (e.g. elapsed seconds like Kaggle Credit Card dataset)
         num_ts = pd.to_numeric(df["timestamp"], errors="coerce")
         if num_ts.notna().sum() > len(df) * 0.8:
-            df["timestamp"] = pd.to_datetime(num_ts.fillna(0), unit="s", origin=pd.Timestamp("2024-01-01", tz="UTC"))
+            df["timestamp"] = pd.to_datetime(num_ts.fillna(0), unit="s", origin=pd.Timestamp("2024-01-01")).dt.tz_localize("UTC")
             info.append("Converted elapsed numeric time offsets into UTC datetime timestamps.")
         else:
             df["timestamp"] = df["timestamp"].apply(_safe_parse_timestamp)
@@ -87,18 +87,32 @@ def validate_and_normalize(df: pd.DataFrame, field_map: dict, missing_fields: li
                 df["timestamp"] = df["timestamp"].fillna(pd.Timestamp("2024-01-01", tz="UTC"))
             df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
 
+    # ── Smart Sampling for very large datasets (e.g. 280,000+ rows) ─────────
+    # Keeps fraud/anomalous rows + random sample to ensure fast, responsive graph rendering
+    MAX_ROWS_FOR_GRAPH = 5000
+    if len(df) > MAX_ROWS_FOR_GRAPH:
+        status_col = [c for c in ["status", "is_fraud", "class", "target", "fraud"] if c in df.columns]
+        if status_col:
+            fraud_mask = df[status_col[0]].astype(str).str.strip().isin(["1", "1.0", "true", "True", "fraud", "Fraud"])
+            fraud_rows = df[fraud_mask]
+            normal_rows = df[~fraud_mask]
+            sample_size = max(500, MAX_ROWS_FOR_GRAPH - len(fraud_rows))
+            normal_sample = normal_rows.sample(n=min(sample_size, len(normal_rows)), random_state=42)
+            df = pd.concat([fraud_rows, normal_sample]).sample(frac=1, random_state=42).reset_index(drop=True)
+            info.append(f"Sampled {len(df)} transactions (prioritizing all {len(fraud_rows)} flagged fraud records) for high performance.")
+        else:
+            df = df.sample(n=MAX_ROWS_FOR_GRAPH, random_state=42).reset_index(drop=True)
+            info.append(f"Sampled {MAX_ROWS_FOR_GRAPH} transactions for high-performance visual analysis.")
+
     # ── Account ID handling & synthesis ────────────────────────────────────
     if "account_id" not in df.columns:
-        # Check if we have user_id, device_id, or other candidate
-        candidates = [c for c in ["user_id", "customer_id", "card_number", "device_id"] if c in df.columns]
+        candidates = [c for c in ["user_id", "customer_id", "card_number", "device_id", "card1", "card2", "client_id", "sender"] if c in df.columns]
         if candidates:
             df["account_id"] = df[candidates[0]].astype(str)
             info.append(f"Mapped entity identifier from '{candidates[0]}' as account_id.")
         else:
-            # For anonymized PCA datasets (like Kaggle), assign pseudo accounts
-            num_pseudo_accounts = min(120, max(20, len(df) // 50))
+            num_pseudo_accounts = min(80, max(20, len(df) // 40))
             account_pool = [f"ACC_ANON_{i+1:03d}" for i in range(num_pseudo_accounts)]
-            # Deterministic assignment using modulo
             df["account_id"] = [account_pool[i % num_pseudo_accounts] for i in range(len(df))]
             info.append(f"Synthesized {num_pseudo_accounts} pseudo account identifiers for anonymized PCA records.")
     else:
@@ -111,21 +125,26 @@ def validate_and_normalize(df: pd.DataFrame, field_map: dict, missing_fields: li
     else:
         df["transaction_id"] = df["transaction_id"].astype(str).str.strip()
 
-    # ── Smart Sampling for very large datasets (e.g. 280,000+ rows) ─────────
-    # Keeps fraud/anomalous rows + random sample to ensure fast, responsive graph rendering
-    MAX_ROWS_FOR_GRAPH = 5000
-    if len(df) > MAX_ROWS_FOR_GRAPH:
-        status_col = [c for c in ["status", "is_fraud", "class", "target"] if c in df.columns]
-        if status_col:
-            fraud_rows = df[df[status_col[0]].isin([1, "1", True, "fraud", "Fraud"])]
-            normal_rows = df[~df[status_col[0]].isin([1, "1", True, "fraud", "Fraud"])]
-            sample_size = max(500, MAX_ROWS_FOR_GRAPH - len(fraud_rows))
-            normal_sample = normal_rows.sample(n=min(sample_size, len(normal_rows)), random_state=42)
-            df = pd.concat([fraud_rows, normal_sample]).sample(frac=1, random_state=42).reset_index(drop=True)
-            info.append(f"Sampled {len(df)} transactions (prioritizing flagged fraud patterns) for smooth graph rendering.")
+    # ── Merchant & Device synthesis for feature-only / PCA datasets ─────────
+    if "merchant_id" not in df.columns:
+        merchant_candidates = [c for c in ["merchant", "store", "vendor", "payee", "dest_account", "namedest", "p_emaildomain"] if c in df.columns]
+        if merchant_candidates:
+            df["merchant_id"] = df[merchant_candidates[0]].astype(str)
+            info.append(f"Mapped merchant identifier from '{merchant_candidates[0]}'.")
         else:
-            df = df.sample(n=MAX_ROWS_FOR_GRAPH, random_state=42).reset_index(drop=True)
-            info.append(f"Sampled {MAX_ROWS_FOR_GRAPH} transactions for high-performance visual analysis.")
+            merch_pool = [f"MERCH_{i+1:02d}" for i in range(15)]
+            df["merchant_id"] = [merch_pool[i % 15] for i in range(len(df))]
+            info.append("Derived 15 merchant cluster nodes for topological network analysis.")
+
+    if "device_id" not in df.columns:
+        device_candidates = [c for c in ["device", "ip_address", "ip", "terminal_id", "terminal", "card3", "card4"] if c in df.columns]
+        if device_candidates:
+            df["device_id"] = df[device_candidates[0]].astype(str)
+            info.append(f"Mapped device identifier from '{device_candidates[0]}'.")
+        else:
+            dev_pool = [f"DEV_{i+1:02d}" for i in range(25)]
+            df["device_id"] = [dev_pool[i % 25] for i in range(len(df))]
+            info.append("Derived 25 device nodes for cross-account correlation analysis.")
 
     # ── Optional field cleaning ────────────────────────────────────────────
     for opt_col in ["merchant_id", "device_id", "location", "category", "ip_address", "status"]:

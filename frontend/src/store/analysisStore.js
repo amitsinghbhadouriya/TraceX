@@ -200,7 +200,7 @@ const useAnalysisStore = create((set, get) => ({
 
   // --- Chat Assistant Actions ---
   fetchChatHistory: async (sessionId) => {
-    const targetSession = sessionId || get().sessionId;
+    const targetSession = sessionId || get().sessionId || get().selectedDataset?.sessionId;
     if (!targetSession) return;
     try {
       const res = await graphApi.getChatHistory(targetSession);
@@ -225,16 +225,26 @@ const useAnalysisStore = create((set, get) => ({
   },
 
   sendChatMessage: async (message) => {
-    const { sessionId } = get();
-    if (!sessionId) return;
+    if (!message || !message.trim()) return;
+    const targetSession = get().sessionId || get().selectedDataset?.sessionId;
+    if (!targetSession) {
+      const errMsg = {
+        role: 'assistant',
+        content: 'No active investigation session. Please select or analyze a dataset first.',
+        timestamp: new Date().toISOString()
+      };
+      set((state) => ({ chatMessages: [...state.chatMessages, errMsg], chatLoading: false }));
+      return;
+    }
+
     set({ chatLoading: true });
     
     // Add user message immediately
-    const userMsg = { role: 'user', content: message, timestamp: new Date().toISOString() };
+    const userMsg = { role: 'user', content: message.trim(), timestamp: new Date().toISOString() };
     set((state) => ({ chatMessages: [...state.chatMessages, userMsg] }));
 
     try {
-      const res = await graphApi.chat(sessionId, message);
+      const res = await graphApi.chat(targetSession, message.trim());
       const botMsg = {
         role: 'assistant',
         content: res.data.response,
@@ -248,7 +258,7 @@ const useAnalysisStore = create((set, get) => ({
     } catch (err) {
       const errMsg = {
         role: 'assistant',
-        content: `Error: ${err.response?.data?.error || 'Failed to get answer from helper.'}`,
+        content: `Error: ${err.response?.data?.error || err.response?.data?.detail || 'Failed to get answer from assistant.'}`,
         timestamp: new Date().toISOString()
       };
       set((state) => ({
