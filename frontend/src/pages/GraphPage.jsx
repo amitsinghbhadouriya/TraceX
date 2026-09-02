@@ -236,10 +236,10 @@ const GraphPage = () => {
 
   return (
     <div className="h-[calc(100vh-6rem)] flex flex-col relative animate-fade-in gap-3 pb-4">
-      
+
       {/* ── Top Filter & Control Ribbon ─────────────────────────── */}
       <div className="card p-3.5 sm:p-4 bg-navy-800/95 border-white/10 flex flex-wrap items-center justify-between gap-3 shadow-xl z-20">
-        
+
         {/* Search Field */}
         <div className="flex-1 min-w-[220px] max-w-sm relative">
           <input
@@ -289,11 +289,10 @@ const GraphPage = () => {
           {/* Quick Threat Filter */}
           <button
             onClick={() => setOnlyHighRisk(!onlyHighRisk)}
-            className={`text-xs px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 ${
-              onlyHighRisk
+            className={`text-xs px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 ${onlyHighRisk
                 ? 'bg-rose/20 text-rose border-rose shadow-glow-rose font-bold'
                 : 'bg-white/5 text-slate-400 border-white/10 hover:text-slate-200'
-            }`}
+              }`}
           >
             <span>🚨 Flagged Only (Score ≥ 50)</span>
           </button>
