@@ -17,33 +17,40 @@ import {
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const { token, login, datasets, fetchDatasets, selectDataset, runAnalysis } = useAnalysisStore();
+  const { token, login, datasets, fetchDatasets, selectDataset, runAnalysis, loadDemoCase } = useAnalysisStore();
   const [demoLoading, setDemoLoading] = useState(false);
   const [interactiveRisk, setInteractiveRisk] = useState(88);
 
   const handleLaunchDemoCase = async () => {
     setDemoLoading(true);
     try {
-      if (!token) {
-        await login('investigator@tracex.internal', 'amit@2004');
+      let loggedIn = !!token;
+      if (!loggedIn) {
+        loggedIn = await login('investigator@tracex.internal', 'amit@2004');
       }
 
-      await fetchDatasets();
-      const currentDatasets = useAnalysisStore.getState().datasets;
+      if (loggedIn) {
+        await fetchDatasets();
+        const currentDatasets = useAnalysisStore.getState().datasets;
 
-      if (currentDatasets.length > 0) {
-        const target = currentDatasets[0];
-        selectDataset(target);
-        if (target.status !== 'analysis_complete') {
-          await runAnalysis(target._id);
+        if (currentDatasets.length > 0) {
+          const target = currentDatasets[0];
+          selectDataset(target);
+          if (target.status !== 'analysis_complete') {
+            await runAnalysis(target._id);
+          }
+          navigate('/dashboard');
+          return;
         }
-        navigate('/dashboard');
-      } else {
-        navigate('/upload');
       }
+
+      // If backend is not available or returned no datasets, load rich demo case
+      loadDemoCase();
+      navigate('/dashboard');
     } catch (err) {
-      console.error('Demo launch error:', err);
-      navigate('/upload');
+      console.warn('Backend unavailable, launching local showcase demo case:', err);
+      loadDemoCase();
+      navigate('/dashboard');
     } finally {
       setDemoLoading(false);
     }

@@ -1,7 +1,10 @@
 import axios from 'axios';
 
+const rawBaseUrl = import.meta.env.VITE_API_URL;
+const baseURL = rawBaseUrl ? rawBaseUrl.replace(/\/+$/, '') : '/api';
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL,
 });
 
 // Automatically inject JWT token from localStorage if present

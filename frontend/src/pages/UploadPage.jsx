@@ -17,7 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const UploadPage = () => {
-  const { runAnalysis, selectDataset, datasets, fetchDatasets, analysisRunning, analysisError } = useAnalysisStore();
+  const { runAnalysis, selectDataset, datasets, fetchDatasets, analysisRunning, analysisError, loadDemoCase } = useAnalysisStore();
   const [uploadData, setUploadData] = useState(null);
   const [demoLoading, setDemoLoading] = useState(false);
   const navigate = useNavigate();
@@ -48,7 +48,7 @@ const UploadPage = () => {
     try {
       await fetchDatasets();
       const current = useAnalysisStore.getState().datasets;
-      if (current.length > 0) {
+      if (current.length > 0 && !current[0].isDemo) {
         const target = current[0];
         selectDataset(target);
         if (target.status !== 'analysis_complete') {
@@ -56,10 +56,13 @@ const UploadPage = () => {
         }
         navigate('/dashboard');
       } else {
+        loadDemoCase();
         navigate('/dashboard');
       }
     } catch (err) {
-      console.error('Instant demo error:', err);
+      console.warn('Backend unavailable, loading showcase demo case:', err);
+      loadDemoCase();
+      navigate('/dashboard');
     } finally {
       setDemoLoading(false);
     }

@@ -18,6 +18,7 @@ const Sidebar = () => {
   const {
     logout,
     user,
+    isDemoMode,
     selectedDataset,
     datasets,
     fetchDatasets,
@@ -84,6 +85,22 @@ const Sidebar = () => {
           </h1>
           <p className="text-[10px] text-slate-500 font-mono">FINANCIAL FRAUD NETWORK GRAPH</p>
         </div>
+      </div>
+
+      {/* Mode Indicator Pill */}
+      <div className="px-6 py-2 bg-navy-800/40 border-b border-white/5 flex items-center justify-between text-[11px] font-mono">
+        <span className="text-slate-400">Environment:</span>
+        {isDemoMode ? (
+          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-cyan/15 text-cyan border border-cyan/30 text-[10px] font-semibold">
+            <span className="h-1.5 w-1.5 rounded-full bg-cyan animate-pulse" />
+            Showcase Demo
+          </span>
+        ) : (
+          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald/15 text-emerald border border-emerald/30 text-[10px] font-semibold">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald" />
+            Live Backend
+          </span>
+        )}
       </div>
 
       {/* Dataset Selection Bar */}

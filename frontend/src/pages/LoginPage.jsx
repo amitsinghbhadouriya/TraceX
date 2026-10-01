@@ -22,7 +22,7 @@ const LoginPage = ({ initialMode = 'login' }) => {
   const queryMode = searchParams.get('mode');
   const [mode, setMode] = useState(queryMode === 'register' ? 'register' : initialMode);
 
-  const { login, register, token, authLoading, authError, clearAuthError } = useAnalysisStore();
+  const { login, register, token, authLoading, authError, clearAuthError, loadDemoCase } = useAnalysisStore();
   const navigate = useNavigate();
 
   const [loginEmail, setLoginEmail] = useState('');
@@ -84,6 +84,11 @@ const LoginPage = ({ initialMode = 'login' }) => {
     setLoginPassword('amit@2004');
     clearAuthError();
     setValidationError('');
+  };
+
+  const handleLaunchDemo = () => {
+    loadDemoCase();
+    navigate('/dashboard');
   };
 
   const features = [
@@ -229,9 +234,20 @@ const LoginPage = ({ initialMode = 'login' }) => {
 
             {/* Error Banner */}
             {(authError || validationError) && (
-              <div className="mb-4 p-3 rounded-xl bg-rose/12 border border-rose/25 text-rose text-xs font-medium flex items-start gap-2.5">
-                <ExclamationCircleIcon className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                <span>{validationError || authError}</span>
+              <div className="mb-4 p-3 rounded-xl bg-rose/12 border border-rose/25 text-rose text-xs font-medium flex flex-col gap-2">
+                <div className="flex items-start gap-2.5">
+                  <ExclamationCircleIcon className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <span>{validationError || authError}</span>
+                </div>
+                {authError && (authError.includes('connect') || authError.includes('backend') || authError.includes('online')) && (
+                  <button
+                    type="button"
+                    onClick={handleLaunchDemo}
+                    className="self-start text-[11px] underline text-cyan hover:text-cyan/80 font-semibold ml-6"
+                  >
+                    Backend not connected? Click here to explore with preloaded Demo Case →
+                  </button>
+                )}
               </div>
             )}
 
@@ -302,14 +318,23 @@ const LoginPage = ({ initialMode = 'login' }) => {
                   )}
                 </button>
 
+                {/* Instant Showcase Demo Button */}
+                <button
+                  type="button"
+                  onClick={handleLaunchDemo}
+                  className="w-full py-2.5 px-3 rounded-lg bg-cyan/10 hover:bg-cyan/20 border border-cyan/30 text-cyan text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-glow-cyan/20"
+                >
+                  <SparklesIcon className="h-4 w-4 text-cyan" />
+                  Explore Showcase Demo (Instant Preview)
+                </button>
+
                 {/* Demo fill */}
                 <button
                   type="button"
                   onClick={handleQuickDemoFill}
-                  className="w-full py-2.5 px-3 rounded-lg bg-white/5 hover:bg-white/8 border border-white/10 text-slate-400 hover:text-slate-200 text-xs font-mono flex items-center justify-center gap-2 transition-colors"
+                  className="w-full py-2 px-3 rounded-lg bg-white/5 hover:bg-white/8 border border-white/10 text-slate-400 hover:text-slate-200 text-xs font-mono flex items-center justify-center gap-2 transition-colors"
                 >
-                  <SparklesIcon className="h-3.5 w-3.5 text-cyan" />
-                  Use Demo Investigator Account
+                  Fill Demo Credentials
                 </button>
               </form>
             )}
@@ -420,6 +445,15 @@ const LoginPage = ({ initialMode = 'login' }) => {
                       Create Account & Enter TraceX
                     </span>
                   )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleLaunchDemo}
+                  className="w-full py-2.5 px-3 rounded-lg bg-cyan/10 hover:bg-cyan/20 border border-cyan/30 text-cyan text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-glow-cyan/20"
+                >
+                  <SparklesIcon className="h-4 w-4 text-cyan" />
+                  Explore Showcase Demo (Instant Preview)
                 </button>
               </form>
             )}
